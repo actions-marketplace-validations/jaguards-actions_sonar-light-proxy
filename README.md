@@ -1,6 +1,21 @@
-# Sonar Light Proxy
+<h1 align="center">
+  <a href="https://github.com/jaguards-actions/sonar-light-proxy">Sonar Light Proxy</a>
+  <br>
+</h1>
+<h4 align="center">A lightweight GitHub Actions composite action that starts a local HTTP reverse-proxy and injects custom headers into every request forwarded to SonarQube.</h4>
 
-A lightweight GitHub Actions composite action that starts a local HTTP reverse-proxy (pure Node.js, **zero extra dependencies**) and injects custom headers into every request forwarded to SonarQube or SonarCloud.
+<p align="center">
+  <a href="https://github.com/jaguards-actions/sonar-light-proxy/blob/main/LICENSE"><img alt="GitHub License" src="https://img.shields.io/github/license/jaguards-actions/sonar-light-proxy"></a>
+  <img alt="GitHub Release" src="https://img.shields.io/github/v/release/jaguards-actions/sonar-light-proxy">
+</p>
+
+<p align="center">
+  <a href="#how-it-works">How it works</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#requirements">Requirements</a> •
+  <a href="#security-considerations">Security considerations</a> •
+  <a href="#license">License</a>
+</p>
 
 This is useful when your SonarQube instance sits behind an API gateway or a load-balancer that requires specific headers (API keys, custom tokens, routing hints, etc.) that the standard Sonar scanner does not support natively.
 
