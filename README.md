@@ -41,7 +41,7 @@ jobs:
       # 1. Start the proxy
       - name: Start Sonar proxy
         id: proxy
-        uses: <your-github-username>/sonar-light-proxy@v1
+        uses: jaguards-actions/sonar-light-proxy
         with:
           sonar-host-url: 'https://sonar.example.com'
           headers: '{"X-Api-Key": "${{ secrets.SONAR_API_KEY }}", "X-Custom-Header": "value"}'
@@ -54,13 +54,41 @@ jobs:
           SONAR_HOST_URL: ${{ steps.proxy.outputs.proxy-url }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 3. (Optional) Quality Gate check
+      # 3. (Optional) Patch report-task.txt so the quality-gate action also goes through the proxy
+      #    (the scanner writes the upstream serverUrl into report-task.txt; this step
+      #    rewrites it to the proxy URL so the quality-gate action uses the proxy too)
+      - name: Patch report-task.txt
+        uses: jaguards-actions/sonar-light-proxy/patch-report-task
+        with:
+          proxy-url: ${{ steps.proxy.outputs.proxy-url }}
+          # report-task-path: .scannerwork/report-task.txt  # default
+
+      # 4. (Optional) Quality Gate check – now routes through the proxy thanks to step 3
       - name: SonarQube Quality Gate
         uses: SonarSource/sonarqube-quality-gate-action@v1
         env:
-          SONAR_HOST_URL: ${{ steps.proxy.outputs.proxy-url }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
+
+### Why the patch step is needed for the Quality Gate check
+
+The SonarQube scanner writes a `report-task.txt` file (default location:
+`.scannerwork/report-task.txt`) that contains:
+
+```
+serverUrl=https://sonar.example.com
+ceTaskUrl=https://sonar.example.com/api/ce/task?id=…
+dashboardUrl=https://sonar.example.com/dashboard?…
+```
+
+These URLs come from the **upstream server's own configuration**, not from
+`SONAR_HOST_URL`.  When the `sonarqube-quality-gate-action` reads that file it
+will call the upstream server directly, bypassing the proxy and missing the
+required headers.
+
+The `patch-report-task` sub-action replaces every occurrence of the upstream
+URL with the proxy URL so that the quality-gate action goes through the proxy
+as well.
 
 ---
 
