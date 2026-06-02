@@ -15,21 +15,22 @@
  *        • dashboardUrl
  *   4. Writes the patched content back to the same file.
  *
- * Environment variables:
- *   PROXY_URL         – Local proxy URL, e.g. http://127.0.0.1:9000  (required)
- *   REPORT_TASK_PATH  – Path to report-task.txt                       (optional)
+ * Environment variables (set by action.yml via env:):
+ *   PROXY_URL          – Local proxy URL, e.g. http://127.0.0.1:9000  (required)
+ *   REPORT_TASK_PATH   – Path to report-task.txt                       (optional)
  */
 
 const fs   = require('fs');
 const path = require('path');
 
 // ── Config ────────────────────────────────────────────────────────────────────
+// Inputs are passed as environment variables from action.yml.
 const proxyUrl        = process.env.PROXY_URL;
 const reportTaskPath  = process.env.REPORT_TASK_PATH
   || path.join(process.cwd(), '.scannerwork', 'report-task.txt');
 
 if (!proxyUrl) {
-  console.error('[patch-report-task] PROXY_URL environment variable is required.');
+  console.error('[patch-report-task] Input "proxy-url" is required.');
   process.exit(1);
 }
 
