@@ -1,0 +1,12 @@
+{
+  "name": "sonar-light-proxy",
+  "description": "Lightweight GH Actions reverse-proxy that injects custom headers into SonarQube requests",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1"
+  }
+}
+
