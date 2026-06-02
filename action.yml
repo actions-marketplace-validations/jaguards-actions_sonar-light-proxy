@@ -1,7 +1,5 @@
 name: 'Sonar Light Proxy'
-description: >
-  A lightweight GitHub Actions composite action that starts a local HTTP reverse-proxy and injects 
-  custom headers into every request forwarded to SonarQube
+description: 'Lightweight GH Actions for a local HTTP reverse-proxy that injects custom headers into every request forwarded to SonarQube'
 author: 'brandon'
 
 branding:

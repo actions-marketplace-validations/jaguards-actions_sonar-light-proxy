@@ -1,6 +1,5 @@
 name: 'Patch SonarQube report-task.txt'
-description: > 
-  Rewrites report-task.txt URLs to route quality-gate requests through the local proxy.
+description: 'Rewrites report-task.txt URLs to route quality-gate requests through the local proxy'
 author: 'brandon'
 
 branding:
