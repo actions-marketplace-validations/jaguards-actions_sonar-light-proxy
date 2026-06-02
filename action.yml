@@ -1,0 +1,68 @@
+name: 'Sonar Light Proxy'
+description: >
+  Starts a local HTTP reverse-proxy (Node.js, zero extra dependencies) that
+  injects custom headers into every request forwarded to SonarQube /
+  SonarCloud.  Use the `proxy-url` output as SONAR_HOST_URL in subsequent
+  scan and quality-gate steps so that all traffic passes through the proxy.
+  The proxy process is automatically terminated when the runner job ends.
+author: 'brandon'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  sonar-host-url:
+    description: 'Target SonarQube / SonarCloud URL (e.g. https://sonar.example.com)'
+    required: true
+  headers:
+    description: >
+      JSON object of additional HTTP headers to inject into every upstream
+      request.  Example: '{"X-Api-Key":"secret","X-Forwarded-Proto":"https"}'
+    required: false
+    default: '{}'
+  proxy-port:
+    description: 'Local TCP port the proxy will listen on (must be free on the runner)'
+    required: false
+    default: '9000'
+
+outputs:
+  proxy-url:
+    description: 'Local proxy URL to substitute as SONAR_HOST_URL in subsequent steps'
+    value: ${{ steps.start-proxy.outputs.proxy-url }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Start Sonar proxy
+      id: start-proxy
+      shell: bash
+      env:
+        SONAR_HOST_URL: ${{ inputs.sonar-host-url }}
+        PROXY_PORT: ${{ inputs.proxy-port }}
+        SONAR_PROXY_HEADERS: ${{ inputs.headers }}
+      run: |
+        # Launch the proxy as a background process.
+        # The PID is stored in SONAR_PROXY_PID so the caller can stop it if needed.
+        node "${{ github.action_path }}/proxy.js" &
+        PROXY_PID=$!
+        echo "SONAR_PROXY_PID=${PROXY_PID}" >> "$GITHUB_ENV"
+        echo "[sonar-proxy] Started (PID=${PROXY_PID})"
+
+        # Wait up to 15 s for the proxy to accept connections
+        PROXY_PORT="${{ inputs.proxy-port }}"
+        READY=0
+        for i in $(seq 1 15); do
+          if nc -z 127.0.0.1 "${PROXY_PORT}" 2>/dev/null; then
+            READY=1
+            break
+          fi
+          sleep 1
+        done
+        if [ "${READY}" -ne 1 ]; then
+          echo "::error::[sonar-proxy] Proxy did not start within 15 seconds on port ${PROXY_PORT}"
+          exit 1
+        fi
+        echo "[sonar-proxy] Ready on http://127.0.0.1:${PROXY_PORT} → ${{ inputs.sonar-host-url }}"
+        echo "proxy-url=http://127.0.0.1:${PROXY_PORT}" >> "$GITHUB_OUTPUT"
+
