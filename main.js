@@ -56,6 +56,36 @@ function setFailed(msg) {
   process.exit(1);
 }
 
+// ── Port availability helpers ─────────────────────────────────────────────────
+
+/** Returns true if the given port is free (nothing listening on it). */
+function isPortFree(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(false));
+    server.once('listening', () => { server.close(() => resolve(true)); });
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+/**
+ * Returns an available port. Tries `desiredPort` first; if it is taken,
+ * asks the OS for a random free port by binding on port 0.
+ */
+async function findAvailablePort(desiredPort) {
+  if (await isPortFree(desiredPort)) return desiredPort;
+  info(`[sonar-proxy] Port ${desiredPort} is already in use, picking a random free port…`);
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once('error', reject);
+    server.once('listening', () => {
+      const { port } = server.address();
+      server.close(() => resolve(port));
+    });
+    server.listen(0, '127.0.0.1');
+  });
+}
+
 // ── Port-readiness check ──────────────────────────────────────────────────────
 
 async function waitForPort(port, timeoutSeconds = 15) {
@@ -77,13 +107,19 @@ async function waitForPort(port, timeoutSeconds = 15) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function run() {
-  const sonarHostUrl = getInput('sonar-host-url', { required: true });
-  const proxyPort    = getInput('proxy-port') || '9000';
-  const headers      = getInput('headers')    || '{}';
+  const sonarHostUrl    = getInput('sonar-host-url', { required: true });
+  const desiredPort     = parseInt(getInput('proxy-port') || '9000', 10);
+  const headers         = getInput('headers') || '{}';
 
   const proxyScript = path.join(__dirname, 'proxy.js');
 
-  info(`[sonar-proxy] Starting proxy on port ${proxyPort} → ${sonarHostUrl}`);
+  // Pick the desired port or a random free one if it is already occupied
+  const actualPort = await findAvailablePort(desiredPort);
+  if (actualPort !== desiredPort) {
+    info(`[sonar-proxy] Using port ${actualPort} instead of ${desiredPort}`);
+  }
+
+  info(`[sonar-proxy] Starting proxy on port ${actualPort} → ${sonarHostUrl}`);
 
   const child = spawn(process.execPath, [proxyScript], {
     detached: true,
@@ -91,7 +127,7 @@ async function run() {
     env: {
       ...process.env,
       SONAR_HOST_URL:      sonarHostUrl,
-      PROXY_PORT:          proxyPort,
+      PROXY_PORT:          String(actualPort),
       SONAR_PROXY_HEADERS: headers,
     },
   });
@@ -100,11 +136,11 @@ async function run() {
 
   // Persist the PID so the post step can stop the process
   saveState('SONAR_PROXY_PID', String(child.pid));
-  info(`[sonar-proxy] Spawned (PID=${child.pid}), waiting for port ${proxyPort}…`);
+  info(`[sonar-proxy] Spawned (PID=${child.pid}), waiting for port ${actualPort}…`);
 
-  await waitForPort(parseInt(proxyPort, 10));
+  await waitForPort(actualPort);
 
-  const proxyUrl = `http://127.0.0.1:${proxyPort}`;
+  const proxyUrl = `http://127.0.0.1:${actualPort}`;
   info(`[sonar-proxy] Ready on ${proxyUrl}`);
   setOutput('proxy-url', proxyUrl);
 }
