@@ -1,10 +1,7 @@
 name: 'Sonar Light Proxy'
 description: >
-  Starts a local HTTP reverse-proxy (Node.js, zero extra dependencies) that
-  injects custom headers into every request forwarded to SonarQube /
-  SonarCloud.  Use the `proxy-url` output as SONAR_HOST_URL in subsequent
-  scan and quality-gate steps so that all traffic passes through the proxy.
-  The proxy process is automatically terminated when the runner job ends.
+  A lightweight GitHub Actions composite action that starts a local HTTP reverse-proxy and injects 
+  custom headers into every request forwarded to SonarQube
 author: 'brandon'
 
 branding:

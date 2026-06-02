@@ -1,9 +1,6 @@
 name: 'Patch SonarQube report-task.txt'
-description: >
-  Rewrites the serverUrl, ceTaskUrl and dashboardUrl entries inside the
-  report-task.txt file produced by the SonarQube scanner so that the
-  sonarqube-quality-gate-action routes its requests through the local
-  proxy instead of hitting the upstream server directly.
+description: > 
+  Rewrites report-task.txt URLs to route quality-gate requests through the local proxy.
 author: 'brandon'
 
 branding:
